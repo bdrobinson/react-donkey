@@ -1,0 +1,12 @@
+{
+    "name": "root",
+    "private": true,
+    "devDependencies": {
+        "flow-bin": "^0.94.0",
+        "lerna": "^3.13.1",
+        "prettier": "^1.16.4"
+    },
+    "workspaces": [
+        "packages/*"
+    ]
+}
