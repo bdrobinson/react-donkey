@@ -77,7 +77,10 @@ const tests = {
         {
             code: `<Donkey deps={[var1]}><div>{var1}<Thing value={var2} otherThing={var2} /></div></Donkey>`,
             errors: [
-                {message: "React Donkey is missing some deps: var2.", type: "JSXAttribute",},
+                {
+                    message: "React Donkey is missing some deps: var2.",
+                    type: "JSXAttribute",
+                },
             ],
         },
     ],
