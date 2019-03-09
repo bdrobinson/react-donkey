@@ -1,0 +1,20 @@
+{
+  "name": "eslint-plugin-react-donkey",
+  "version": "0.0.0",
+  "description": "> TODO: description",
+  "author": "Ben Robinson <ben@txrx.org.uk>",
+  "homepage": "",
+  "license": "MIT",
+  "main": "src/index.js",
+  "directories": {
+    "src": "src",
+    "test": "__tests__"
+  },
+  "devDependencies": {
+    "babel-eslint": "^10.0.1",
+    "eslint": "^5.15.1"
+  },
+  "peerDependencies": {
+    "eslint": "^5.15.1"
+  }
+}
