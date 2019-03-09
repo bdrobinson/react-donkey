@@ -59,7 +59,15 @@ module.exports = {
                 }
                 const childIdentifiers = (walkThrough(node.parent.children));
                 const childIdentifierNames = [...childIdentifiers].map(i => i.name)
-                const specifiedDeps = deps.value.expression.elements
+                const childExpression = deps.value.expression
+                if (childExpression.type !== "ArrayExpression") {
+                    context.report({
+                        node: childExpression,
+                        message: "React Donkey's deps must be an array.",
+                    })
+                    return
+                }
+                const specifiedDeps = childExpression.elements
                 for(const dep of specifiedDeps) {
                     if (dep.type !== "Identifier") {
                         context.report({
@@ -84,9 +92,10 @@ module.exports = {
                     }
                 }
                 if (unspecifiedNames.length > 0) {
+                    const uniqueUnspecifiedNames = [...new Set(unspecifiedNames)]
                     context.report({
                         node: deps,
-                        message: `React Donkey is missing some deps: ${unspecifiedNames.join(", ")}.`,
+                        message: `React Donkey is missing some deps: ${uniqueUnspecifiedNames.join(", ")}.`,
                     })
                 }
             },

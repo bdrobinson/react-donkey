@@ -53,6 +53,15 @@ const tests = {
             ],
         },
         {
+            code: `<Donkey deps={() => {}}>{null}</Donkey>`,
+            errors: [
+                {
+                    message: "React Donkey's deps must be an array.",
+                    type: "ArrowFunctionExpression",
+                },
+            ],
+        },
+        {
             code: `<Donkey deps={[v1, v2]}>{null}</Donkey>`,
             errors: [
                 {
@@ -66,7 +75,7 @@ const tests = {
             ],
         },
         {
-            code: `<Donkey deps={[var1]}><div>{var1}<Thing value={var2} /></div></Donkey>`,
+            code: `<Donkey deps={[var1]}><div>{var1}<Thing value={var2} otherThing={var2} /></div></Donkey>`,
             errors: [
                 {message: "React Donkey is missing some deps: var2.", type: "JSXAttribute",},
             ],
