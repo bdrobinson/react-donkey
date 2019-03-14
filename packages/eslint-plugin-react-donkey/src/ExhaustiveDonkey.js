@@ -44,27 +44,6 @@ const depthFirstSearch = (node, onFoundNode) => {
     return true
 }
 
-const isFunctionExpressionTopLevel = node => {
-    // For nodes that are either FunctionExpression,ArrowFunctionExpression,FunctionDeclaration
-    const parent = node.parent
-    if (parent == null) {
-        // not even sure if this is possible
-        return false
-    }
-    // document what it catches
-    if (
-        parent.type === "VariableDeclarator" &&
-        parent.parent.type === "VariableDeclaration" &&
-        parent.parent.parent.type === "Program"
-    ) {
-        return true
-    }
-    if (parent.type === "Program") {
-        return true
-    }
-    return false
-}
-
 module.exports = {
     meta: {
         type: "problem",
