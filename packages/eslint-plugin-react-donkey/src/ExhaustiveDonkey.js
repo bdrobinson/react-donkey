@@ -50,6 +50,15 @@ module.exports = {
         schema: [], // no options
     },
     create: function(context) {
+        const globalScope = context.getScope()
+        const moduleScope = context
+            .getScope()
+            .childScopes.find(s => s.type === "module")
+        const ignoreVars = [
+            ...globalScope.through.map(ref => ref.identifier.name),
+            ...globalScope.variables.map(v => v.name),
+            ...moduleScope.variables.map(v => v.name),
+        ]
         return {
             JSXOpeningElement(node) {
                 if (node.name.name !== "Donkey") {
@@ -102,6 +111,12 @@ module.exports = {
                             context.report({
                                 node: dep,
                                 message: `Unused dep: '${dep.name}'`,
+                            })
+                        }
+                        if (ignoreVars.includes(dep.name)) {
+                            context.report({
+                                node: dep,
+                                message: `Unnecessary dep: '${dep.name}'`,
                             })
                         }
                     }

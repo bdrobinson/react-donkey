@@ -99,6 +99,38 @@ const tests = {
                 },
             ],
         },
+        {
+            code: `
+                import { thing } from 'some-package'
+                const var1 = 3
+                const Comp = () => {
+                    // strictly this should also be unnecessary, as it cannot
+                    // change, but ignore this case for now.
+                    const localDep = 8
+                    return (
+                        <Donkey deps={[var1, thing, localDep, window]}>
+                            {var1}
+                            {thing}
+                            {localDep}
+                            {window}
+                        </Donkey>)
+                }
+            `,
+            errors: [
+                {
+                    message: "Unnecessary dep: 'var1'",
+                    type: "Identifier",
+                },
+                {
+                    message: "Unnecessary dep: 'thing'",
+                    type: "Identifier",
+                },
+                {
+                    message: "Unnecessary dep: 'window'",
+                    type: "Identifier",
+                },
+            ],
+        }
     ],
 }
 
