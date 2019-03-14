@@ -1,34 +1,68 @@
 // @flow
 
-const walkThrough = node => {
+const walkThrough = (node, type) => {
     const identifiers = new Set()
+    depthFirstSearch(node, child => {
+        if (child.type === type) {
+            identifiers.add(child)
+        }
+        return true
+    })
+    return identifiers
+}
+
+// not that breadth-first would be any different
+const depthFirstSearch = (node, onFoundNode) => {
     if (node == null) {
-        return identifiers
+        return true
     }
     if (Array.isArray(node)) {
-        node.forEach(subnode => {
-            const moreIdentifiers = walkThrough(subnode)
-            moreIdentifiers.forEach(id => {
-                identifiers.add(id)
-            })
-        })
+        for (const subnode of node) {
+            const shouldContinue = depthFirstSearch(subnode, onFoundNode)
+            if (shouldContinue === false) {
+                return false
+            }
+        }
     }
     if (typeof node === "object") {
-        if (node.type === "Identifier") {
-            identifiers.add(node)
-            return identifiers
-        }
-        for (const key in node) {
-            if (key === "parent") {
-                continue
+        if (node.type != null) {
+            const shouldContinue = onFoundNode(node)
+            if (shouldContinue === false) {
+                return false
             }
-            const moreIdentifiers = walkThrough(node[key])
-            moreIdentifiers.forEach(id => {
-                identifiers.add(id)
-            })
+            for (const key in node) {
+                if (key === "parent") {
+                    continue
+                }
+                const shouldContinue = depthFirstSearch(node[key], onFoundNode)
+                if (shouldContinue === false) {
+                    return false
+                }
+            }
         }
     }
-    return identifiers
+    return true
+}
+
+const isFunctionExpressionTopLevel = node => {
+    // For nodes that are either FunctionExpression,ArrowFunctionExpression,FunctionDeclaration
+    const parent = node.parent
+    if (parent == null) {
+        // not even sure if this is possible
+        return false
+    }
+    // document what it catches
+    if (
+        parent.type === "VariableDeclarator" &&
+        parent.parent.type === "VariableDeclaration" &&
+        parent.parent.parent.type === "Program"
+    ) {
+        return true
+    }
+    if (parent.type === "Program") {
+        return true
+    }
+    return false
 }
 
 module.exports = {
@@ -61,7 +95,10 @@ module.exports = {
                     })
                     return
                 }
-                const childIdentifiers = walkThrough(node.parent.children)
+                const childIdentifiers = walkThrough(
+                    node.parent.children,
+                    "Identifier",
+                )
                 const childIdentifierNames = [...childIdentifiers].map(
                     i => i.name,
                 )
@@ -85,7 +122,7 @@ module.exports = {
                         if (childIdentifierNames.includes(dep.name) !== true) {
                             context.report({
                                 node: dep,
-                                message: "Unused dep.",
+                                message: `Unused dep: '${dep.name}'`,
                             })
                         }
                     }

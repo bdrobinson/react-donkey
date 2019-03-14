@@ -20,7 +20,12 @@ const tests = {
             code: `<Donkey deps={[]}>{null}</Donkey>`,
         },
         {
-            code: `<Donkey deps={[var1, var2]}>{var1 + var2}</Donkey>`,
+            code: `
+            const MyComponent = () => {
+                var var1, var2
+                return <Donkey deps={[var1, var2]}>{var1 + var2}</Donkey>
+            }
+            `
         },
     ],
     invalid: [
@@ -62,20 +67,31 @@ const tests = {
             ],
         },
         {
-            code: `<Donkey deps={[v1, v2]}>{null}</Donkey>`,
+            code: `
+                const Comp = ({ v1, v2 }) => <Donkey deps={[v1, v2]}>{null}</Donkey>
+            `,
             errors: [
                 {
-                    message: "Unused dep.",
+                    message: "Unused dep: 'v1'",
                     type: "Identifier",
                 },
                 {
-                    message: "Unused dep.",
+                    message: "Unused dep: 'v2'",
                     type: "Identifier",
                 },
             ],
         },
         {
-            code: `<Donkey deps={[var1]}><div>{var1}<Thing value={var2} otherThing={var2} /></div></Donkey>`,
+            code: `
+                const Comp = ({ var1, var2 }) => (
+                    <Donkey deps={[var1]}>
+                        <div>
+                            {var1}
+                            <Thing value={var2} otherThing={var2} />
+                        </div>
+                    </Donkey>
+                )
+            `,
             errors: [
                 {
                     message: "React Donkey is missing some deps: var2.",
