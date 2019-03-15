@@ -5,6 +5,7 @@ const walkThrough = (node, type) => {
     depthFirstSearch(node, child => {
         if (child.type === type) {
             identifiers.add(child)
+            return false
         }
         return true
     })
@@ -20,7 +21,7 @@ const depthFirstSearch = (node, onFoundNode) => {
         for (const subnode of node) {
             const shouldContinue = depthFirstSearch(subnode, onFoundNode)
             if (shouldContinue === false) {
-                return false
+                return true
             }
         }
     }
@@ -28,7 +29,7 @@ const depthFirstSearch = (node, onFoundNode) => {
         if (node.type != null) {
             const shouldContinue = onFoundNode(node)
             if (shouldContinue === false) {
-                return false
+                return true
             }
             for (const key in node) {
                 if (key === "parent") {
@@ -36,7 +37,7 @@ const depthFirstSearch = (node, onFoundNode) => {
                 }
                 const shouldContinue = depthFirstSearch(node[key], onFoundNode)
                 if (shouldContinue === false) {
-                    return false
+                    return true
                 }
             }
         }
