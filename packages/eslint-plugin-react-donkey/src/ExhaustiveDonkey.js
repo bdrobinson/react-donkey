@@ -1,15 +1,15 @@
 // @flow
 
-const walkThrough = (node, type) => {
-    const identifiers = new Set()
+const findChildVariables = node => {
+    const nodes = new Set()
     depthFirstSearch(node, child => {
-        if (child.type === type) {
-            identifiers.add(child)
+        if (child.type === "MemberExpression" || child.type === "Identifier") {
+            nodes.add(child)
             return false
         }
         return true
     })
-    return identifiers
+    return nodes
 }
 
 // not that breadth-first would be any different
@@ -84,13 +84,18 @@ module.exports = {
                     })
                     return
                 }
-                const childIdentifiers = walkThrough(
-                    node.parent.children,
-                    "Identifier",
+
+                const childMembers = [
+                    ...findChildVariables(node.parent.children),
+                ]
+
+                const childIdentifierNames = childMembers
+                    .filter(c => c.type === "Identifier")
+                    .map(i => i.name)
+                const childMemberPaths = childMembers.map(
+                    toPropertyAccessString,
                 )
-                const childIdentifierNames = [...childIdentifiers].map(
-                    i => i.name,
-                )
+
                 const childExpression = deps.value.expression
                 if (childExpression.type !== "ArrayExpression") {
                     context.report({
@@ -101,40 +106,63 @@ module.exports = {
                 }
                 const specifiedDeps = childExpression.elements
                 for (const dep of specifiedDeps) {
-                    if (dep.type !== "Identifier") {
+                    if (
+                        dep.type !== "Identifier" &&
+                        dep.type !== "MemberExpression"
+                    ) {
                         context.report({
                             node: dep,
                             message:
                                 "React Donkey's deps should only be variables.",
                         })
-                    } else {
-                        if (childIdentifierNames.includes(dep.name) !== true) {
-                            context.report({
-                                node: dep,
-                                message: `Unused dep: '${dep.name}'`,
-                            })
-                        }
-                        if (ignoreVars.includes(dep.name)) {
-                            context.report({
-                                node: dep,
-                                message: `Unnecessary dep: '${dep.name}'`,
-                            })
-                        }
                     }
                 }
 
-                const unspecifiedNames = []
-                const givenDepIdentifierNames = specifiedDeps
-                    .filter(d => d.type === "Identifier")
-                    .map(d => d.name)
-                for (const name of childIdentifierNames) {
-                    if (givenDepIdentifierNames.includes(name) === false) {
-                        unspecifiedNames.push(name)
+                const depsToTest = specifiedDeps.filter(
+                    d =>
+                        d.type === "Identifier" ||
+                        d.type === "MemberExpression",
+                )
+
+                const missingChildPaths = []
+                const depsWhichSatisfiedChild = new Set()
+                for (const childPath of childMemberPaths) {
+                    const depNodeThatSatisfies = depsToTest.find(node => {
+                        return childPath.startsWith(
+                            toPropertyAccessString(node),
+                        )
+                    })
+                    const childIsSpecified = depNodeThatSatisfies != null
+                    if (depNodeThatSatisfies != null) {
+                        depsWhichSatisfiedChild.add(depNodeThatSatisfies)
+                    }
+                    const isCoveredByGlobalVar = ignoreVars.some(ignoreVar =>
+                        childPath.startsWith(ignoreVar),
+                    )
+                    if (
+                        childIsSpecified === false &&
+                        isCoveredByGlobalVar === false
+                    ) {
+                        missingChildPaths.push(childPath)
                     }
                 }
-                if (unspecifiedNames.length > 0) {
+
+                const unusedDeps = []
+                const globalDeps = []
+                for (const dep of depsToTest) {
+                    if (depsWhichSatisfiedChild.has(dep) === false) {
+                        unusedDeps.push(dep)
+                    }
+                    const depString = toPropertyAccessString(dep)
+                    const isGlobal = ignoreVars.some(ignoreVar => depString.startsWith(ignoreVar))
+                    if (isGlobal) {
+                        globalDeps.push(dep)
+                    }
+                }
+
+                if (missingChildPaths.length > 0) {
                     const uniqueUnspecifiedNames = [
-                        ...new Set(unspecifiedNames),
+                        ...new Set(missingChildPaths),
                     ]
                     context.report({
                         node: deps,
@@ -143,7 +171,40 @@ module.exports = {
                         )}.`,
                     })
                 }
+
+                unusedDeps.forEach(dep => {
+                    context.report({
+                        node: dep,
+                        message: `Unused dep: '${toPropertyAccessString(dep)}'`
+                    })
+                })
+                globalDeps.forEach(dep => {
+                    context.report({
+                        node: dep,
+                        message: `Unnecessary dep: '${toPropertyAccessString(dep)}'`
+                    })
+                })
             },
         }
     },
+}
+
+/**
+ * STOLEN from the react eslint exhaustive hooks rule.
+ * Assuming () means the passed node.
+ * (foo) -> 'foo'
+ * foo.(bar) -> 'foo.bar'
+ * foo.bar.(baz) -> 'foo.bar.baz'
+ * Otherwise throw.
+ */
+function toPropertyAccessString(node) {
+    if (node.type === "Identifier") {
+        return node.name
+    } else if (node.type === "MemberExpression" && !node.computed) {
+        const object = toPropertyAccessString(node.object)
+        const property = toPropertyAccessString(node.property)
+        return `${object}.${property}`
+    } else {
+        throw new Error(`Unsupported node type: ${node.type}`)
+    }
 }

@@ -27,6 +27,34 @@ const tests = {
             }
             `
         },
+        {
+            code: `
+            const MyComponent = ({obj}) => {
+                return <Donkey deps={[obj]}>{obj.layer1.layer2}</Donkey>
+            }
+            `
+        },
+        {
+            code: `
+            const MyComponent = ({obj}) => {
+                return <Donkey deps={[obj.layer1]}>{obj.layer1.layer2}</Donkey>
+            }
+            `
+        },
+        {
+            code: `
+            const MyComponent = ({obj: v1}) => {
+                return <Donkey deps={[v1]}>{v1.layer1.layer2}</Donkey>
+            }
+            `
+        },
+        {
+            code: `
+            const MyComponent = ({obj}) => {
+                return <Donkey deps={[obj.layer1.layer2]}>{obj.layer1.layer2}</Donkey>
+            }
+            `
+        },
     ],
     invalid: [
         {
@@ -130,6 +158,44 @@ const tests = {
                     type: "Identifier",
                 },
             ],
+        },
+        {
+            code: `
+                const Comp = ({thing}) => {
+                    return (
+                        <Donkey deps={[]}>
+                            {thing.subthing}
+                        </Donkey>
+                    )
+                }
+            `,
+            errors: [
+                {
+                    message: "React Donkey is missing some deps: thing.subthing.",
+                    type: "JSXAttribute",
+                }
+            ]
+        },
+        {
+            code: `
+                const Comp = ({thing}) => {
+                    return (
+                        <Donkey deps={[thing.subthing.subsubthing]}>
+                            {thing.subthing}
+                        </Donkey>
+                    )
+                }
+            `,
+            errors: [
+                {
+                    message: "React Donkey is missing some deps: thing.subthing.",
+                    type: "JSXAttribute",
+                },
+                {
+                    message: "Unused dep: 'thing.subthing.subsubthing'",
+                    type: "MemberExpression"
+                }
+            ]
         }
     ],
 }
