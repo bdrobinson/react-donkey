@@ -45,12 +45,22 @@ const depthFirstSearch = (node, onFoundNode) => {
     return true
 }
 
+const collectVariablesInScope = scope => {
+    const variables = scope.variables
+    const upperScope = scope.upper
+    if (upperScope != null) {
+        return [...variables, collectVariablesInScope(upperScope)]
+    }
+    return variables
+}
+
 module.exports = {
     meta: {
         type: "problem",
         schema: [], // no options
     },
     create: function(context) {
+        console.log("START")
         const globalScope = context.getScope()
         const moduleScope = context
             .getScope()
@@ -62,6 +72,11 @@ module.exports = {
         ]
         return {
             JSXOpeningElement(node) {
+                console.log('BEGIN');
+                console.log(
+                    collectVariablesInScope(context.getScope()),
+                )
+
                 if (node.name.name !== "Donkey") {
                     return
                 }
@@ -154,7 +169,9 @@ module.exports = {
                         unusedDeps.push(dep)
                     }
                     const depString = toPropertyAccessString(dep)
-                    const isGlobal = ignoreVars.some(ignoreVar => depString.startsWith(ignoreVar))
+                    const isGlobal = ignoreVars.some(ignoreVar =>
+                        depString.startsWith(ignoreVar),
+                    )
                     if (isGlobal) {
                         globalDeps.push(dep)
                     }
@@ -175,13 +192,15 @@ module.exports = {
                 unusedDeps.forEach(dep => {
                     context.report({
                         node: dep,
-                        message: `Unused dep: '${toPropertyAccessString(dep)}'`
+                        message: `Unused dep: '${toPropertyAccessString(dep)}'`,
                     })
                 })
                 globalDeps.forEach(dep => {
                     context.report({
                         node: dep,
-                        message: `Unnecessary dep: '${toPropertyAccessString(dep)}'`
+                        message: `Unnecessary dep: '${toPropertyAccessString(
+                            dep,
+                        )}'`,
                     })
                 })
             },
