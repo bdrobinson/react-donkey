@@ -1,0 +1,5 @@
+declare type Donkey = React$ComponentType<{
+    deps: Array<mixed>,
+    children: React$Node,
+}>
+declare export default Donkey
